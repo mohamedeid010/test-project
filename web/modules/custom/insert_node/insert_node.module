@@ -1,0 +1,49 @@
+<?php
+
+use Drupal\node\Entity\Node;
+
+
+
+function _get_csrf_token(){
+   $host = \Drupal::request()->getSchemeAndHttpHost();
+   $client = \Drupal::httpClient();
+   $response = \Drupal::httpClient()
+   ->get('http://test-project.test/session/token');
+      return (string) $response->getBody();
+   }
+
+
+
+   function insert_node_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+     if($form_id == 'node_first_content_type_form'){
+      $form['actions']['submit']['#submit'][] = '_insert_node_add_node';
+     }
+      
+
+   }
+
+   function _insert_node_add_node($form, \Drupal\Core\Form\FormStateInterface $form_state) {
+      $form_object = $form_state->getFormObject();
+      $node = $form_object->getEntity();
+      $host = \Drupal::request()->getSchemeAndHttpHost();
+      $client = \Drupal::httpClient();
+      $headers = [
+      'Content-Type' => 'application/json',
+      'Accept' => 'application/json',
+      'X-CSRF-Token' => _get_csrf_token(),
+      'Authorization' => 'Basic YWRtaW46QWExMjM0NTY='
+      ];
+   $body = [
+      "title" => $node->getTitle(),
+     "email" =>$node->field_email->value,
+     "idnumber"=> $node->field_id_number->value,
+     "phone"=> $node->field_phone->value,
+     "summry"=> $node->field_summary->value
+   ];
+   $response = \Drupal::httpClient()
+           ->post('http://test-project.test/api/insert-node', [
+             'body' => json_encode($body, JSON_FORCE_OBJECT),
+             'headers' =>$headers,
+           ]);  
+
+    }
